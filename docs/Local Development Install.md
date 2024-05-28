@@ -40,9 +40,9 @@ Let's begin local development install!
 - ### Cloning the repository
     Clone the repository from the url below
 
-      git clone https://github.com/eclipse-tractusx/demand-capacity-mgmt.git
-  
-    ![Using Github desktop](images/dev/1.png "Cloning the repo")
+        git clone https://github.com/eclipse-tractusx/demand-capacity-mgmt.git
+
+    Checkout branch "fix/local-deployment-issue-fix"
 
 - ### Open in your own IDE of choice
     Boot your IDE of choice and open the backend repo,
@@ -52,65 +52,42 @@ Let's begin local development install!
 
     ![IntelliJ IDE modules](images/dev/2_5.png "resolving dependencies")
 
-  it is normal for startup to have errors, let your IDE finish configuring and download dependencies.
+- ### Clean maven modules and install dependencies: 
+   ```
+   mvn clean && mvn install
+   ```
+   
+   If it fails saying you don't have a JDK, choose JDK17 of your choice.
 
-  go ahead and run a maven clean and install on the specification cycle.
-  if it fails saying you don't have a JDK, choose JDK17 of your choice.
 
-- ### Docker desktop
-
-  Please refer to the official docker desktop installation guide: https://docs.docker.com/desktop/  
-  Please refer to the official WSL Documentation: https://learn.microsoft.com/en-us/windows/wsl/
-
-  <details>
-  <summary>Click me to expand quickstart guide</summary>
-
-      Before you run the project we need to setup Postgres and Keycloak.
-    Let's begin with installing docker(if you are running windows make sure to use WSL2).
-    After installing docker on your machine lets install postgres.
-    if you get an error of Hyper V make sure **virtualization is enabled on your motherboard
-    and if you're on windows, enable Hyper-V feature-**
-    if you get an error of wsl update not supported
-    download and install 
-
-    https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi 
-    
-    open a powershell and type 
-
-      wsl --set-default-version 2
-    
-    then try again
-
-    ![Docker Desktop](images/dev/3.png "Docker install")
-  </details>
 - ### Running containers
+  In the root directory of your project, run:
+  ```sh
+  docker compose up
+  ``` 
+  You should get 2 containers running, one for keycloak and one for postgresql database.
 
-  This project includes integrated support for Spring Boot Docker Compose, facilitating the setup of Keycloak and PostgreSQL without manual intervention.
 
-  You won't need to manually start containers or configure settings. The application will reference the `compose.yaml` file located at the root of the project.
+- ## Run the project
+   Running the project for the first time will run the migrations, which will create the projects schema.
 
-  Feel free to adjust configurations (such as ports and credentials) in the `compose.yaml` file to suit your requirements.
+   Connect to the database with credentials defined in compose.yml, and run the follwoing sql queries:
+   ```sql
+   INSERT INTO "public"."company_base_data" ("id", "bpn", "company_name", "street", "number", "zip_code", "country", "my_company", "edc_url", "counter") VALUES ('377d1583-0fbd-468c-93f9-90dd7d994f79', '', 's1seven', 'random', '2', '1030', 'Austria', '', '', 1);
+   
+   INSERT INTO "public"."dcm_users" ("id", "name", "last_name", "email", "username", "company_id", "role") VALUES ('51d8bd26-e699-4bdc-b453-0422a671631c', '', '', '', 'dcm_admin', '377d1583-0fbd-468c-93f9-90dd7d994f79', 'ADMIN');
+   ```
 
-  When the application starts, it automatically creates a PostgreSQL container with the provided environment credentials. Additionally, a new database for Keycloak is set up.
+- ### Fetching the keycloak client credential and remove required actions
+  Connect to keycloak using credentuals specified in compose.yml file.
+  In clients tab, navigate to dcmauth client and copy the client secret under credentials.
+  Open your application.yaml and place it on keycloak -> clientSecret field.
 
-  On startup, the application also creates a Keycloak container based on the configurations in the Compose file. Initial configurations, including the creation of realms, clients, and users, are performed using the `dcm_realm.json` file.
+  Additionaly, go to **Users** tab, click on user "dcm_admin", and in "Details" tab, remove any "required actions" (otherwise, you won't be ale to login...) --> click "Save"
 
-  ![Docker desktop running containers](images/dev/11.png)
-
-  Further you can login with keycloak admin credentials configured in `compose.yaml` and modify users to you heart's content(under the users tabs, credentials for them, assing roles, etc)
-
-  Ref: https://spring.io/blog/2023/06/21/docker-compose-support-in-spring-boot-3-1
-
-  **Remember you need to have a user role on all users, it can be ADMIN, CUSTOMER, SUPPLIER**
-  failing to have one of these roles won't let the user login in the app.
-
-  [Download keycloak realm json](realm-export.json)
-
-- ### Fetching the keycloak client credential
-  before booting the project again navigate to dcmauth client on keycloak panel and copy the client secret under credentials.
-  open your application.yaml and place it on the dcmsecr section.
-  
-  after that run the project and in postman you should be able to login on the token endpoint with the credentials you modified on keycloak!
+  After that, reboot the project and in postman you should be able to login on the token endpoint with the credentials from keycloak:
+  	- username: dcm_admin
+	- password: admin
 
   ![Postman](images/dev/6.png "Postman login")
 
@@ -129,7 +106,6 @@ Let's begin local development install!
   ![Postman](images/dev/9.png "Postman config")
 
   ![Postman](images/dev/10.png "Postman config")
-
  
 
 - ### Run the front-end
